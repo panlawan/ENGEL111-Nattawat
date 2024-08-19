@@ -1,7 +1,9 @@
 #include "module.h"
 
-const char* ssid = "Ra";
-const char* password = "mm965370";
+const char* ssid = "nattawat";            // WiFi SSID
+const char* password = "";  // WiFi PSK
+
+AsyncWebServer server(80); //http
 
 void setup_wifi() {
   delay(10);
@@ -33,5 +35,42 @@ void setup_wifiAP(){
     Serial.print(" ,PSK: ");
     Serial.println(password);
     Serial.print("AP IP address: ");
-    Serial.println(WiFi.softAPIP());
+    Serial.println(WiFi.softAPIP());  //Default 192.168.4.1
+}
+
+void ConfigServer(){
+  Serial.begin(115200);
+  
+  // 1st step starting SPIFFS
+  if(!SPIFFS.begin(true)){
+    Serial.println("Error Strating SPIFFS!!!");
+    return;
+  }
+
+  // 2nd step Shere WiFi AP
+  setup_wifiAP();
+
+  // 3rd step Create DNS 
+  if(!MDNS.begin("nattawat")){
+    Serial.println("Error Starting DNS");
+    return;
+  }
+
+  // 4th step Server on script and css file
+  server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/styles.css"); });
+  server.on("/bscripts.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/bscripts.js"); });
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/index.html"); });
+  server.on("/shop", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/shop.html"); });
+
+// nattawat.local
+  MDNS.addService("http", "tcp", 80);
+  server.begin();
+}
+
+void handleIndex(AsyncWebServerRequest *request){
+
 }
